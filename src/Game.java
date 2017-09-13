@@ -1,7 +1,6 @@
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL30;
 
 public class Game {
 
@@ -16,6 +15,12 @@ public class Game {
 	private GLFWErrorCallback errorCallback = GLFWErrorCallback.createPrint(System.err);
 	private long window;
 	private WindowCloseCallbackI windowCloseCallback = new WindowCloseCallbackI(this);
+
+	// rendering
+	Renderer renderer = new Renderer();
+	
+	// game scene
+	GameScene scene = new GameScene();
 
 	private void startGame() {
 		init();
@@ -49,14 +54,16 @@ public class Game {
 		// glfw callbacks
 		GLFW.glfwSetWindowCloseCallback(window, windowCloseCallback);
 
-		// initialize own stuff
+		// initialize renderer
+		renderer.init();
 
 		// ready
 		running = true;
 	}
 
 	private void destroy() {
-		// destroy own stuff
+		// destroy renderer
+		renderer.destroy();
 
 		// destroy window
 		GLFW.glfwDestroyWindow(window);
@@ -98,7 +105,7 @@ public class Game {
 	}
 
 	private void render() {
-
+		renderer.render();
 	}
 
 	// entry point
