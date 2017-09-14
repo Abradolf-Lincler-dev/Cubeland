@@ -7,8 +7,8 @@ public class GameScene {
 	public List<Entity> entities = new LinkedList<Entity>();
 	public Inventory inventory = new Inventory();
 	public EnvironmentStates envStates = new EnvironmentStates();
-	
+
 	GameScene() {
-		
+
 	}
 }

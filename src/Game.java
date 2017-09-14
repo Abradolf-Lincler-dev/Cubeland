@@ -1,3 +1,7 @@
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
@@ -12,15 +16,22 @@ public class Game {
 	private boolean running = false;
 
 	// windowing
-	private GLFWErrorCallback errorCallback = GLFWErrorCallback.createPrint(System.err);
+	private GLFWErrorCallback errorCallback = GLFWErrorCallback.createPrint(java.lang.System.err);
 	private long window;
 	private WindowCloseCallbackI windowCloseCallback = new WindowCloseCallbackI(this);
 
-	// rendering
-	Renderer renderer = new Renderer();
-	
 	// game scene
 	GameScene scene = new GameScene();
+
+	// rendering
+	Renderer renderer = new Renderer(this, scene);
+
+	// systems
+	List<System> systems = new ArrayList<System>();
+
+	// Events
+	List<Event> currentEvents = new LinkedList<Event>();
+	List<Event> futureEvents = new LinkedList<Event>();
 
 	private void startGame() {
 		init();
@@ -57,11 +68,20 @@ public class Game {
 		// initialize renderer
 		renderer.init();
 
+		// add systems
+
+		for (System s : systems)
+			s.init(this, scene);
+
 		// ready
 		running = true;
 	}
 
 	private void destroy() {
+		// destroy systems
+		for (System s : systems)
+			s.destroy();
+
 		// destroy renderer
 		renderer.destroy();
 
@@ -85,6 +105,7 @@ public class Game {
 			input();
 			update(deltaTime);
 
+			GL11.glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
 			render();
 			GLFW.glfwSwapBuffers(window);
@@ -97,22 +118,34 @@ public class Game {
 
 	private void input() {
 		GLFW.glfwPollEvents();
-
 	}
 
 	private void update(double delta) {
+		// swap events
+		currentEvents = futureEvents;
+		futureEvents = new LinkedList<Event>();
 
+		for (System s : systems) {
+			s.handleEvents(currentEvents);
+			s.update(delta);
+		}
+		renderer.handleEvents(currentEvents);
+		renderer.update(delta);
 	}
 
 	private void render() {
 		renderer.render();
 	}
 
+	// event management
+	public void createEvent(Event newEvent) {
+		futureEvents.add(newEvent);
+	}
+
 	// entry point
 	public static void main(String[] args) {
 		new Game().startGame();
-
-		System.out.println("exit");
+		java.lang.System.out.println("finished");
 	}
 
 	// callbacks
