@@ -1,48 +1,49 @@
+package rendering;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.lwjgl.glfw.*;
-import org.lwjgl.opengl.GL;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL30;
+import events.Event;
+import game.*;
 
 public class Renderer {
 	// render passes
 	List<RenderPass> renderPasses = new ArrayList<RenderPass>();
 
-	// scene data & game engine
+	// game data
 	Game game;
 	GameScene scene;
+	Config config;
 
-	Renderer(Game game, GameScene scene) {
+	public Renderer(Game game, GameScene scene, Config config) {
 		this.game = game;
 		this.scene = scene;
+		this.config = config;
 
 		// create renderpasses
 
 	}
 
-	void init() {
+	public void init() {
 		for (RenderPass rp : renderPasses) {
-			rp.init();
+			rp.init(this);
 		}
 	}
 
-	void destroy() {
+	public void destroy() {
 		for (RenderPass rp : renderPasses) {
 			rp.destroy();
 		}
 	}
 
-	void handleEvents(List<Event> events) {
+	public void handleEvents(List<Event> events) {
 
 	}
 
-	void update(double delta) {
+	public void update(double delta) {
 
 	}
 
-	void render() {
+	public void render() {
 		for (RenderPass rp : renderPasses) {
 			rp.render();
 		}

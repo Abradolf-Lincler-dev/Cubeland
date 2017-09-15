@@ -1,3 +1,4 @@
+package game;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -5,6 +6,11 @@ import java.util.List;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
+
+import events.*;
+import rendering.Renderer;
+import systems.System;
+import systems.*;
 
 public class Game {
 
@@ -20,11 +26,14 @@ public class Game {
 	private long window;
 	private WindowCloseCallbackI windowCloseCallback = new WindowCloseCallbackI(this);
 
+	// configuration
+	Config config = new Config();
+	
 	// game scene
 	GameScene scene = new GameScene();
 
 	// rendering
-	Renderer renderer = new Renderer(this, scene);
+	Renderer renderer = new Renderer(this, scene, config);
 
 	// systems
 	List<System> systems = new ArrayList<System>();
@@ -64,17 +73,22 @@ public class Game {
 
 		// glfw callbacks
 		GLFW.glfwSetWindowCloseCallback(window, windowCloseCallback);
+		
+		// load configuration
+		config.loadBasicConfig();
 
 		// initialize renderer
 		renderer.init();
 
 		// add systems
-
+		systems.add(new SavingSystem());
+		
 		for (System s : systems)
-			s.init(this, scene);
+			s.init(this, scene, config);
 
 		// ready
 		running = true;
+		createEvent(new Event(Event.Type.INIT_EVENT));
 	}
 
 	private void destroy() {
