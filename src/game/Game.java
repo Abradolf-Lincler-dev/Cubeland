@@ -1,4 +1,5 @@
 package game;
+
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,7 +29,7 @@ public class Game {
 
 	// configuration
 	Config config = new Config();
-	
+
 	// game scene
 	GameScene scene = new GameScene();
 
@@ -73,7 +74,7 @@ public class Game {
 
 		// glfw callbacks
 		GLFW.glfwSetWindowCloseCallback(window, windowCloseCallback);
-		
+
 		// load configuration
 		config.loadBasicConfig();
 
@@ -82,7 +83,7 @@ public class Game {
 
 		// add systems
 		systems.add(new SavingSystem());
-		
+
 		for (System s : systems)
 			s.init(this, scene, config);
 
@@ -139,12 +140,20 @@ public class Game {
 		currentEvents = futureEvents;
 		futureEvents = new LinkedList<Event>();
 
+		// handle events
+		for (Event e : currentEvents) {
+			if (e.type == Event.Type.EXIT) {
+				running = false;
+			}
+		}
+		
 		for (System s : systems) {
 			s.handleEvents(currentEvents);
 			s.update(delta);
 		}
 		renderer.handleEvents(currentEvents);
 		renderer.update(delta);
+
 	}
 
 	private void render() {
@@ -166,16 +175,17 @@ public class Game {
 
 	class WindowCloseCallbackI extends GLFWWindowCloseCallback {
 
-		private Game gameI;
+		private Game game;
 
 		WindowCloseCallbackI(Game game) {
-			this.gameI = game;
+			this.game = game;
 		}
 
 		@Override
 		public void invoke(long window) {
-			if (window == gameI.window) {
-				gameI.running = false;
+			if (window == game.window) {
+				game.createEvent(new Event(Event.Type.SAVE));
+				game.createEvent(new Event(Event.Type.EXIT));
 			}
 		}
 	}

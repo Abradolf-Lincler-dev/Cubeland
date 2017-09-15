@@ -18,5 +18,6 @@
 	<classpathentry kind="lib" path="C:/src/cubeland/lib/lwjgl-3.1.2/lwjgl-opengl/lwjgl-opengl-natives-linux.jar"/>
 	<classpathentry kind="lib" path="C:/src/cubeland/lib/lwjgl-3.1.2/lwjgl-opengl/lwjgl-opengl-natives-macos.jar"/>
 	<classpathentry kind="lib" path="C:/src/cubeland/lib/lwjgl-3.1.2/lwjgl-opengl/lwjgl-opengl-natives-windows.jar"/>
+	<classpathentry kind="lib" path="C:/src/cubeland/lib/joml-1.9.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
