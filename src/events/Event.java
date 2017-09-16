@@ -7,6 +7,9 @@ public class Event {
 		EXIT,
 		
 		SAVE,
+		LOAD,// class LoadEvent
+		FAILED_LOAD,// class FailedLoadEvent
+		
 		CHUNK_CHANGE_EVENT,// class ChunkChangeEvent
 		
 	}
