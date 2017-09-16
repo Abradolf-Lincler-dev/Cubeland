@@ -57,6 +57,10 @@ public class InputSystem extends System {
 																		// last
 																		// (or
 																		// sth).
+						} else if (command.equals("save")) {
+							game.createEvent(new Event(Event.Type.SAVE));
+						} else if (command.equals("exit")) {
+							game.createEvent(new Event(Event.Type.EXIT));
 						} else {// unknown command
 							java.lang.System.out.print("Unknown command " + command + "");
 						}

@@ -102,6 +102,7 @@ public class SavingSystem extends System {
 						}
 					}
 					saveRegion(regionStr, scene.envStates.levelName, regionChunks);
+					java.lang.System.out.println("Saved");
 				}
 			} else if (e.type == Event.Type.LOAD) {
 				String saveName = ((LoadEvent) e).saveName;
@@ -118,6 +119,8 @@ public class SavingSystem extends System {
 						+ ((int) tmpPlayer.position.z()) / Chunk.REGION_CHUNKS;
 
 				loadRegion(regionStr, saveName);
+
+				java.lang.System.out.println("Loaded");
 			}
 
 		}
@@ -154,7 +157,7 @@ public class SavingSystem extends System {
 
 			// load data
 			String name = in.readUTF();
-			if (name != saveName) {
+			if (!name.equals(saveName)) {
 				java.lang.System.out.println("Metafile is corrupted: name");
 				game.createEvent(new MessageEvent(Event.Type.FAILED_LOAD, "Metadata of save is corrupted: name"));
 			}
@@ -182,7 +185,7 @@ public class SavingSystem extends System {
 
 			// load data
 			String name = in.readUTF();
-			if (name != playerName) {
+			if (!name.equals(playerName)) {
 				java.lang.System.out.println("Playerfile is corrupted: name");
 				game.createEvent(new MessageEvent(Event.Type.FAILED_LOAD, "Playerdata of save is corrupted: name"));
 			}
