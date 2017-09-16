@@ -8,10 +8,11 @@ public class Event {
 		
 		SAVE,
 		LOAD,// class LoadEvent
-		FAILED_LOAD,// class FailedLoadEvent
+		FAILED_LOAD,// class MessageEvent
 		
-		CHUNK_CHANGE_EVENT,// class ChunkChangeEvent
+		CHUNK_CHANGE,// class ChunkChangeEvent
 		
+		KEY_INPUT,// class KeyInputEvent
 	}
 	public final Type type;
 	

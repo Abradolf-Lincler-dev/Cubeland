@@ -26,6 +26,7 @@ public class Game {
 	private GLFWErrorCallback errorCallback = GLFWErrorCallback.createPrint(java.lang.System.err);
 	private long window;
 	private WindowCloseCallbackI windowCloseCallback = new WindowCloseCallbackI(this);
+	private GLFWKeyCallback keyCallback;
 
 	// configuration
 	Config config = new Config();
@@ -74,6 +75,10 @@ public class Game {
 
 		// glfw callbacks
 		GLFW.glfwSetWindowCloseCallback(window, windowCloseCallback);
+		GLFW.glfwSetKeyCallback(window, keyCallback = GLFWKeyCallback.create((w, key, scancode, action, mods) -> {
+			if (w == window)
+				createEvent(new KeyInputEvent(key, scancode, action, mods));
+		}));
 
 		// load configuration
 		config.loadBasicConfig();
@@ -83,6 +88,7 @@ public class Game {
 
 		// add systems
 		systems.add(new SavingSystem());
+		systems.add(new InputSystem());
 
 		for (System s : systems)
 			s.init(this, scene, config);
@@ -146,7 +152,7 @@ public class Game {
 				running = false;
 			}
 		}
-		
+
 		for (System s : systems) {
 			s.handleEvents(currentEvents);
 			s.update(delta);

@@ -71,7 +71,7 @@ public class SavingSystem extends System {
 				newChunk.blocks[4][8][8] = dirtID;
 				scene.chunks.add(newChunk);
 				game.createEvent(new ChunkChangeEvent(newChunk));
-			} else if (e.type == Event.Type.CHUNK_CHANGE_EVENT) {
+			} else if (e.type == Event.Type.CHUNK_CHANGE) {
 				// memorize chunk
 				changedChunks.add(((ChunkChangeEvent) e).chunk);
 
@@ -113,9 +113,9 @@ public class SavingSystem extends System {
 				scene.players.clear();
 				scene.players.put(tmpPlayer.name, tmpPlayer);
 
-				String regionStr = tmpPlayer.position.x() / Chunk.REGION_CHUNKS + "_"
-						+ tmpPlayer.position.y() / Chunk.REGION_CHUNKS + "_"
-						+ tmpPlayer.position.z() / Chunk.REGION_CHUNKS;
+				String regionStr = ((int) tmpPlayer.position.x()) / Chunk.REGION_CHUNKS + "_"
+						+ ((int) tmpPlayer.position.y()) / Chunk.REGION_CHUNKS + "_"
+						+ ((int) tmpPlayer.position.z()) / Chunk.REGION_CHUNKS;
 
 				loadRegion(regionStr, saveName);
 			}
@@ -126,7 +126,7 @@ public class SavingSystem extends System {
 	@Override
 	public void update(double delta) {
 
-		{// Print scene into console
+		if (false) {// Print scene into console
 			Chunk tmpChunk = scene.chunks.get(0);
 			String buffer = "";
 			for (int y = Chunk.CHUNK_SIZE - 1; y >= 0; y--) {
@@ -170,7 +170,7 @@ public class SavingSystem extends System {
 		Player newPlayer = null;
 		try {
 			// open file
-			File file = new File(savePath + saveName + "/" + playerName + "/meta.data");
+			File file = new File(savePath + saveName + "/player/" + playerName + ".data");
 			DataInputStream in = new DataInputStream(new FileInputStream(file));
 
 			byte version = (byte) in.read();
