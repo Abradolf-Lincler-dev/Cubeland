@@ -38,6 +38,9 @@ public class SavingSystem extends System {
 	// chunk cache
 	List<Chunk> changedChunks = new LinkedList<Chunk>();
 
+	// timer
+	double saveTimer;// memorize time to next save
+
 	@Override
 	public void init(Game game, GameScene scene, Config config) {
 		this.game = game;
@@ -71,6 +74,7 @@ public class SavingSystem extends System {
 				newChunk.blocks[4][8][8] = dirtID;
 				scene.chunks.add(newChunk);
 				game.createEvent(new ChunkChangeEvent(newChunk));
+
 			} else if (e.type == Event.Type.CHUNK_CHANGE) {
 				// memorize chunk
 				changedChunks.add(((ChunkChangeEvent) e).chunk);
@@ -128,6 +132,10 @@ public class SavingSystem extends System {
 
 	@Override
 	public void update(double delta) {
+
+		saveTimer += delta;
+		if (saveTimer > 60)// in seconds
+			game.createEvent(new Event(Event.Type.SAVE));
 
 		if (false) {// Print scene into console
 			Chunk tmpChunk = scene.chunks.get(0);
