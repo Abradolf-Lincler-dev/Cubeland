@@ -80,6 +80,7 @@ public class SavingSystem extends System {
 				changedChunks.add(((ChunkChangeEvent) e).chunk);
 
 			} else if (e.type == Event.Type.SAVE) {
+				java.lang.System.out.println("Saving...");
 				saveMetaData(scene.envStates.levelName);
 				savePlayerData(scene.players.get(config.playername), scene.envStates.levelName);
 
@@ -106,8 +107,8 @@ public class SavingSystem extends System {
 						}
 					}
 					saveRegion(regionStr, scene.envStates.levelName, regionChunks);
-					java.lang.System.out.println("Saved");
 				}
+				java.lang.System.out.println("Saved");
 			} else if (e.type == Event.Type.LOAD) {
 				String saveName = ((LoadEvent) e).saveName;
 				loadMetaData(saveName);
@@ -134,8 +135,10 @@ public class SavingSystem extends System {
 	public void update(double delta) {
 
 		saveTimer += delta;
-		if (saveTimer > 60)// in seconds
+		if (saveTimer > 60) {// in seconds
+			saveTimer -= 60;
 			game.createEvent(new Event(Event.Type.SAVE));
+		}
 
 		if (false) {// Print scene into console
 			Chunk tmpChunk = scene.chunks.get(0);

@@ -16,8 +16,7 @@ import systems.*;
 public class Game {
 
 	// constant stuff
-	private static final double TARGET_FPS = 60.;
-	private static final double TARGET_TIME = 1. / TARGET_FPS;
+	private static final double TARGET_FPS = 59.;
 
 	// runtime variables
 	private boolean running = false;
@@ -116,12 +115,11 @@ public class Game {
 	}
 
 	private void gameLoop() throws InterruptedException {
-		double startTime;
-		double endTime;
-		double deltaTime = 0;
+		double startTime = GLFW.glfwGetTime();
+		double deltaTime = 0.;
+		double fpsSleepTime = 0.;
 
 		while (running) {
-			startTime = GLFW.glfwGetTime();
 
 			input();
 			update(deltaTime);
@@ -131,9 +129,15 @@ public class Game {
 			render();
 			GLFW.glfwSwapBuffers(window);
 
-			endTime = GLFW.glfwGetTime();
-			deltaTime = endTime - startTime;
-			Thread.sleep((long) (Math.max(TARGET_TIME - deltaTime, 0.) * 1000));
+
+			// FPS calculations
+			fpsSleepTime = ( ( 1. / (double)( TARGET_FPS ) ) + startTime - GLFW.glfwGetTime() ) * 1000.;
+			if( fpsSleepTime < 0. ) fpsSleepTime = 0.;
+			Thread.sleep( (long)fpsSleepTime );
+			deltaTime = GLFW.glfwGetTime() - startTime;
+			startTime = GLFW.glfwGetTime();
+			if( deltaTime > 1 ) deltaTime = 1;// catch framedrops
+			//java.lang.System.out.println("FPS: " + (1./deltaTime));
 		}
 	}
 
