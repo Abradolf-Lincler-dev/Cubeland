@@ -9,7 +9,7 @@ import org.joml.*;
 public class Chunk {
 	public final static int CHUNK_SIZE = 16; // count of blocks on one side of a
 												// chunk.
-	public final static int REGION_CHUNKS = 32; // count of chunks on one side
+	public final static int REGION_CHUNKS = 8; // count of chunks on one side
 												// of a block.
 
 	public short[][][] blocks = new short[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];

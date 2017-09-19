@@ -7,7 +7,7 @@ public class ChunkChangeEvent extends Event {
 	public Chunk chunk;
 	
 	public ChunkChangeEvent(Chunk chunk) {
-		super(Event.Type.CHUNK_CHANGE);
+		super(Event.Type.CHUNK_CHANGED);
 	
 		this.chunk = chunk;
 	}

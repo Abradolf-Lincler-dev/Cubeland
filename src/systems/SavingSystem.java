@@ -8,14 +8,19 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.SynchronousQueue;
 
 import org.joml.Vector3i;
 
 import events.ChunkChangeEvent;
 import events.Event;
-import events.LoadEvent;
+import events.GenerateChunkEvent;
+import events.LoadChunkEvent;
+import events.LoadSceneEvent;
 import events.MessageEvent;
 import game.Chunk;
 import game.*;
@@ -37,6 +42,14 @@ public class SavingSystem extends System {
 
 	// chunk cache
 	List<Chunk> changedChunks = new LinkedList<Chunk>();
+	Map<Vector3i, Chunk> chunkBuffer = new HashMap<Vector3i, Chunk>();// chunks
+																		// of
+																		// loaded
+																		// regions
+	List<String> loadedRegions = new ArrayList<String>();// List of loaded
+															// region-names
+															// TODO: unload if
+															// needed
 
 	// timer
 	double saveTimer;// memorize time to next save
@@ -59,23 +72,8 @@ public class SavingSystem extends System {
 	public void handleEvents(List<Event> events) {
 		for (Event e : events) {
 			if (e.type == Event.Type.INIT_EVENT) {
-
-				// generate a debug chunk
-				Chunk newChunk = new Chunk();
-
-				short dirtID = config.findBlock("dirt").id;
-				for (int z = 0; z < Chunk.CHUNK_SIZE; z++) {
-					for (int y = 0; y < Chunk.CHUNK_SIZE / 2; y++) {
-						for (int x = 0; x < Chunk.CHUNK_SIZE; x++) {
-							newChunk.blocks[x][y][z] = dirtID;
-						}
-					}
-				}
-				newChunk.blocks[4][8][8] = dirtID;
-				scene.chunks.add(newChunk);
-				game.createEvent(new ChunkChangeEvent(newChunk));
-
-			} else if (e.type == Event.Type.CHUNK_CHANGE) {
+				game.createEvent(new LoadSceneEvent("default"));
+			} else if (e.type == Event.Type.CHUNK_CHANGED) {
 				// memorize chunk
 				changedChunks.add(((ChunkChangeEvent) e).chunk);
 
@@ -109,23 +107,63 @@ public class SavingSystem extends System {
 					saveRegion(regionStr, scene.envStates.levelName, regionChunks);
 				}
 				java.lang.System.out.println("Saved");
-			} else if (e.type == Event.Type.LOAD) {
-				String saveName = ((LoadEvent) e).saveName;
+			} else if (e.type == Event.Type.LOAD_SCENE) {
+				String saveName = ((LoadSceneEvent) e).saveName;
+				java.lang.System.out.println("Load scene '" + saveName + "'");
+				scene.name = saveName;
+
 				loadMetaData(saveName);
-				Player tmpPlayer = loadPlayerData(config.playername, saveName);// TODO:
-																				// load
-																				// all
-																				// players
+				Player tmpPlayer = loadPlayerData(config.playername, saveName);
+				scene.currPlayer = tmpPlayer;
 				scene.players.clear();
 				scene.players.put(tmpPlayer.name, tmpPlayer);
 
-				String regionStr = ((int) tmpPlayer.position.x()) / Chunk.REGION_CHUNKS + "_"
-						+ ((int) tmpPlayer.position.y()) / Chunk.REGION_CHUNKS + "_"
-						+ ((int) tmpPlayer.position.z()) / Chunk.REGION_CHUNKS;
+				java.lang.System.out.println("Loaded scene");
+			} else if (e.type == Event.Type.LOAD_CHUNK) {
+				List<Vector3i> chunksToLoad = ((LoadChunkEvent) e).chunksToLoad;
 
-				loadRegion(regionStr, saveName);
+				for (Vector3i c : chunksToLoad) {
+					if (chunkBuffer.containsKey(c)) {
+						Chunk tmpChunk = chunkBuffer.get(c);
+						scene.chunks.add(tmpChunk);
+						game.createEvent(new ChunkChangeEvent(tmpChunk));
+					} else {// Load/create chunk
+						String regionStr = ((int) c.x()) / Chunk.REGION_CHUNKS + "_"
+								+ ((int) c.y()) / Chunk.REGION_CHUNKS + "_" + ((int) c.z()) / Chunk.REGION_CHUNKS;
 
-				java.lang.System.out.println("Loaded");
+						// Search for region in loaded regions
+						boolean found = false;
+						for (String s : loadedRegions)
+							if (s.equals(regionStr)) {
+								found = true;
+								break;
+							}
+
+						if (found) {// generate a new chunk, because region does
+									// not contain it
+							game.createEvent(new GenerateChunkEvent(c));
+						} else {// Load new region to find chunks
+							List<Chunk> tmpChunks = loadRegion(regionStr, scene.name);
+
+							// Find chunk we're searching for & add region to
+							// chunk buffer
+							Chunk missingChunk = null;
+							for (Chunk tmpC : tmpChunks) {
+								if (tmpC.position.equals(c))
+									missingChunk = tmpC;
+								chunkBuffer.put(tmpC.position, tmpC);
+							}
+							loadedRegions.add(regionStr);
+
+							if (missingChunk == null)// TODO do some error stuff
+								java.lang.System.out.println("ERROR AT LOADING CHUNK FROM REGION!!!");
+
+							else
+								game.createEvent(new ChunkChangeEvent(missingChunk));
+						}
+					}
+				}
+
 			}
 
 		}
@@ -139,6 +177,14 @@ public class SavingSystem extends System {
 			saveTimer -= 60;
 			game.createEvent(new Event(Event.Type.SAVE));
 		}
+		
+		// TODO: check for surrounding chunks to load/unload
+		if( scene.chunks.isEmpty() ) {
+			List<Vector3i> chunksToLoad = new ArrayList<Vector3i>();
+			chunksToLoad.add(new Vector3i(0,0,0));
+			game.createEvent(new LoadChunkEvent(chunksToLoad));
+		}
+		
 
 		if (false) {// Print scene into console
 			Chunk tmpChunk = scene.chunks.get(0);
@@ -263,7 +309,7 @@ public class SavingSystem extends System {
 					String type = in.readUTF();
 					newChunk.specialMeta.add(config.metaDataLoader.get(type).load(in, type));
 				}
-
+				chunks.add(newChunk);
 			}
 
 			in.close();

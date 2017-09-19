@@ -7,7 +7,7 @@ import org.lwjgl.glfw.GLFW;
 
 import events.Event;
 import events.KeyInputEvent;
-import events.LoadEvent;
+import events.LoadSceneEvent;
 import game.Config;
 import game.Game;
 import game.GameScene;
@@ -50,7 +50,7 @@ public class InputSystem extends System {
 							commandLine.substring(0, commandLine.indexOf(' '));
 
 						if (command.equals("load")) {
-							game.createEvent(new LoadEvent("default"));// TODO
+							game.createEvent(new LoadSceneEvent("default"));// TODO
 																		// change
 																		// default
 																		// to
