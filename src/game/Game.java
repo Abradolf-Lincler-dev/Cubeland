@@ -88,6 +88,7 @@ public class Game {
 		// add systems
 		systems.add(new SavingSystem());
 		systems.add(new InputSystem());
+		systems.add(new WorldGeneratorSystem());
 
 		for (System s : systems)
 			s.init(this, scene, config);
@@ -129,15 +130,16 @@ public class Game {
 			render();
 			GLFW.glfwSwapBuffers(window);
 
-
 			// FPS calculations
-			fpsSleepTime = ( ( 1. / (double)( TARGET_FPS ) ) + startTime - GLFW.glfwGetTime() ) * 1000.;
-			if( fpsSleepTime < 0. ) fpsSleepTime = 0.;
-			Thread.sleep( (long)fpsSleepTime );
+			fpsSleepTime = ((1. / (double) (TARGET_FPS)) + startTime - GLFW.glfwGetTime()) * 1000.;
+			if (fpsSleepTime < 0.)
+				fpsSleepTime = 0.;
+			Thread.sleep((long) fpsSleepTime);
 			deltaTime = GLFW.glfwGetTime() - startTime;
 			startTime = GLFW.glfwGetTime();
-			if( deltaTime > 1 ) deltaTime = 1;// catch framedrops
-			//java.lang.System.out.println("FPS: " + (1./deltaTime));
+			if (deltaTime > 1)
+				deltaTime = 1;// catch framedrops
+			// java.lang.System.out.println("FPS: " + (1./deltaTime));
 		}
 	}
 
@@ -178,7 +180,7 @@ public class Game {
 	// entry point
 	public static void main(String[] args) {
 		new Game().startGame();
-		java.lang.System.out.println("finished");
+		Logger.info("finished");
 	}
 
 	// callbacks

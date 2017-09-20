@@ -4,13 +4,14 @@ import java.util.List;
 
 import org.joml.Vector3i;
 
-import events.ChunkChangeEvent;
+import events.ChunkEvent;
 import events.Event;
-import events.GenerateChunkEvent;
+import events.ChunkPositionEvent;
 import game.Chunk;
 import game.Config;
 import game.Game;
 import game.GameScene;
+import game.Logger;
 
 public class WorldGeneratorSystem extends System {
 
@@ -35,8 +36,9 @@ public class WorldGeneratorSystem extends System {
 	public void handleEvents(List<Event> events) {
 		for (Event e : events) {
 			if (e.type == Event.Type.GENERATE_CHUNK) {
-				Chunk newChunk = generateChunk(((GenerateChunkEvent) e).position);
-				game.createEvent(new ChunkChangeEvent(newChunk));
+				Chunk newChunk = generateChunk(((ChunkPositionEvent) e).position);
+				game.createEvent(new ChunkEvent(Event.Type.UPDATE_RENDER_MESH, newChunk));
+				game.createEvent(new ChunkEvent(Event.Type.UPDATE_CHUNK, newChunk));
 			}
 		}
 
@@ -62,7 +64,8 @@ public class WorldGeneratorSystem extends System {
 		chunk.blocks[4][8][8] = dirtID;
 		scene.chunks.add(chunk);
 
-		java.lang.System.out.println("Generated new Chunk at " + position.x + ", " + position.y + ", " + position.z);
+		game.createEvent(new ChunkPositionEvent(Event.Type.CHUNK_GENERATED, position));
+		Logger.info("Generated new Chunk at " + position.x + ", " + position.y + ", " + position.z);
 
 		return chunk;
 	}

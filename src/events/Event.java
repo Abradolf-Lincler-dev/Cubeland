@@ -10,9 +10,12 @@ public class Event {
 		NEW_PROFILE_LOADED, // class LoadEvent
 
 		LOAD_CHUNK, // class LoadChunkEvent
-		GENERATE_CHUNK, // class GenerateChunkEvent
-		
-		CHUNK_CHANGED, // class ChunkChangeEvent
+		GENERATE_CHUNK, // class ChunkPositionEvent
+		CHUNK_GENERATED, // class ChunkPositionEvent
+
+		UPDATE_RENDER_MESH, // class ChunkEvent; update mesh of a chunk
+		UPDATE_CHUNK, // class ChunkEvent; a chunk was edited
+		MOVED_TO_NEW_CHUNK,
 
 		KEY_INPUT,// class KeyInputEvent
 	}

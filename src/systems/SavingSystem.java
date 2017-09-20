@@ -16,13 +16,12 @@ import java.util.concurrent.SynchronousQueue;
 
 import org.joml.Vector3i;
 
-import events.ChunkChangeEvent;
+import events.ChunkEvent;
 import events.Event;
-import events.GenerateChunkEvent;
+import events.ChunkPositionEvent;
 import events.LoadChunkEvent;
 import events.LoadSceneEvent;
 import events.MessageEvent;
-import game.Chunk;
 import game.*;
 
 // Manages saving & loading of scenes
@@ -41,7 +40,8 @@ public class SavingSystem extends System {
 	public final static byte SAVE_VERSION_PLAYER = 1;
 
 	// chunk cache
-	List<Chunk> changedChunks = new LinkedList<Chunk>();
+	List<Chunk> changedChunks = new LinkedList<Chunk>();// chunks which were
+														// edited
 	Map<Vector3i, Chunk> chunkBuffer = new HashMap<Vector3i, Chunk>();// chunks
 																		// of
 																		// loaded
@@ -50,6 +50,9 @@ public class SavingSystem extends System {
 															// region-names
 															// TODO: unload if
 															// needed
+	List<Vector3i> orderedChunks = new LinkedList<Vector3i>();// Chunks which
+																// will be
+																// created
 
 	// timer
 	double saveTimer;// memorize time to next save
@@ -73,14 +76,16 @@ public class SavingSystem extends System {
 		for (Event e : events) {
 			if (e.type == Event.Type.INIT_EVENT) {
 				game.createEvent(new LoadSceneEvent("default"));
-			} else if (e.type == Event.Type.CHUNK_CHANGED) {
+				game.createEvent(new Event(Event.Type.MOVED_TO_NEW_CHUNK));
+			} else if (e.type == Event.Type.UPDATE_CHUNK) {
 				// memorize chunk
-				changedChunks.add(((ChunkChangeEvent) e).chunk);
-
+				changedChunks.add(((ChunkEvent) e).chunk);
 			} else if (e.type == Event.Type.SAVE) {
-				java.lang.System.out.println("Saving...");
+				Logger.info("Saving...");
 				saveMetaData(scene.envStates.levelName);
 				savePlayerData(scene.players.get(config.playername), scene.envStates.levelName);
+
+				int savedChunksCount = changedChunks.size();
 
 				while (!changedChunks.isEmpty()) {// iterate until all chunks
 													// have been handled
@@ -90,8 +95,8 @@ public class SavingSystem extends System {
 							+ region.z() / Chunk.REGION_CHUNKS;
 
 					List<Chunk> regionChunks;
-					regionChunks = new ArrayList<Chunk>();// TODO delete
 					regionChunks = loadRegion(regionStr, scene.envStates.levelName);
+
 					for (Chunk c : changedChunks) {// replace with changed
 													// chunks
 						if (c.position.mul(1 / Chunk.REGION_CHUNKS).equals(region)) {
@@ -101,32 +106,36 @@ public class SavingSystem extends System {
 									break;
 								}
 							regionChunks.add(c);
-							changedChunks.remove(c);
 						}
 					}
+					changedChunks.removeAll(regionChunks);
 					saveRegion(regionStr, scene.envStates.levelName, regionChunks);
 				}
-				java.lang.System.out.println("Saved");
+				Logger.info("Saved (" + savedChunksCount + " saved)");
 			} else if (e.type == Event.Type.LOAD_SCENE) {
 				String saveName = ((LoadSceneEvent) e).saveName;
-				java.lang.System.out.println("Load scene '" + saveName + "'");
+				Logger.info("Load scene '" + saveName + "'");
 				scene.name = saveName;
 
 				loadMetaData(saveName);
 				Player tmpPlayer = loadPlayerData(config.playername, saveName);
+				if (tmpPlayer == null) {
+					tmpPlayer = new Player(config.playername);
+				}
 				scene.currPlayer = tmpPlayer;
 				scene.players.clear();
 				scene.players.put(tmpPlayer.name, tmpPlayer);
 
-				java.lang.System.out.println("Loaded scene");
+				Logger.info("Loaded scene");
 			} else if (e.type == Event.Type.LOAD_CHUNK) {
 				List<Vector3i> chunksToLoad = ((LoadChunkEvent) e).chunksToLoad;
 
 				for (Vector3i c : chunksToLoad) {
-					if (chunkBuffer.containsKey(c)) {
+					if (chunkBuffer.containsKey(c)) {// already buffered
 						Chunk tmpChunk = chunkBuffer.get(c);
 						scene.chunks.add(tmpChunk);
-						game.createEvent(new ChunkChangeEvent(tmpChunk));
+						game.createEvent(new ChunkEvent(Event.Type.UPDATE_RENDER_MESH, tmpChunk));
+						Logger.info("Chunk loaded: " + c.x + ", " + c.y + ", " + c.z);
 					} else {// Load/create chunk
 						String regionStr = ((int) c.x()) / Chunk.REGION_CHUNKS + "_"
 								+ ((int) c.y()) / Chunk.REGION_CHUNKS + "_" + ((int) c.z()) / Chunk.REGION_CHUNKS;
@@ -141,7 +150,8 @@ public class SavingSystem extends System {
 
 						if (found) {// generate a new chunk, because region does
 									// not contain it
-							game.createEvent(new GenerateChunkEvent(c));
+							game.createEvent(new ChunkPositionEvent(Event.Type.GENERATE_CHUNK, c));
+							orderedChunks.add(c);
 						} else {// Load new region to find chunks
 							List<Chunk> tmpChunks = loadRegion(regionStr, scene.name);
 
@@ -155,15 +165,34 @@ public class SavingSystem extends System {
 							}
 							loadedRegions.add(regionStr);
 
-							if (missingChunk == null)// TODO do some error stuff
-								java.lang.System.out.println("ERROR AT LOADING CHUNK FROM REGION!!!");
-
-							else
-								game.createEvent(new ChunkChangeEvent(missingChunk));
+							if (missingChunk == null) {// generate new chunk
+								game.createEvent(new ChunkPositionEvent(Event.Type.GENERATE_CHUNK, c));
+								orderedChunks.add(c);
+							} else {
+								game.createEvent(new ChunkEvent(Event.Type.UPDATE_RENDER_MESH, missingChunk));
+								Logger.info("Chunk loaded: " + c.x + ", " + c.y + ", " + c.z);
+							}
 						}
 					}
 				}
 
+			} else if (e.type == Event.Type.CHUNK_GENERATED) {
+				// remove ordered chunks
+				Vector3i pos = ((ChunkPositionEvent) e).position;
+				for (Vector3i c : orderedChunks)
+					if (c.equals(pos)) {
+						orderedChunks.remove(c);
+						break;
+					}
+			} else if (e.type == Event.Type.MOVED_TO_NEW_CHUNK) {
+				// TODO: check for surrounding chunks to load/unload
+				List<Vector3i> chunksToLoad = new ArrayList<Vector3i>();
+				chunksToLoad.add(new Vector3i(0, 0, 0));
+				chunksToLoad.add(new Vector3i(1, 0, 0));
+				chunksToLoad.add(new Vector3i(-1, 0, 0));
+				chunksToLoad.add(new Vector3i(0, 0, 1));
+				chunksToLoad.add(new Vector3i(0, 0, -1));
+				game.createEvent(new LoadChunkEvent(chunksToLoad));
 			}
 
 		}
@@ -173,18 +202,10 @@ public class SavingSystem extends System {
 	public void update(double delta) {
 
 		saveTimer += delta;
-		if (saveTimer > 60) {// in seconds
-			saveTimer -= 60;
+		if (saveTimer > 10) {// in seconds TODO set 60
+			saveTimer -= 10;
 			game.createEvent(new Event(Event.Type.SAVE));
 		}
-		
-		// TODO: check for surrounding chunks to load/unload
-		if( scene.chunks.isEmpty() ) {
-			List<Vector3i> chunksToLoad = new ArrayList<Vector3i>();
-			chunksToLoad.add(new Vector3i(0,0,0));
-			game.createEvent(new LoadChunkEvent(chunksToLoad));
-		}
-		
 
 		if (false) {// Print scene into console
 			Chunk tmpChunk = scene.chunks.get(0);
@@ -207,7 +228,7 @@ public class SavingSystem extends System {
 
 			byte version = (byte) in.read();
 			if (version != SAVE_VERSION_META) {
-				java.lang.System.out.println("Version of meta file is not correct!");
+				Logger.error("Version of meta file is not correct!");
 				game.createEvent(new MessageEvent(Event.Type.FAILED_LOAD,
 						"Incompatible version '" + version + "'. Can't load file (meta)."));
 			}
@@ -215,14 +236,14 @@ public class SavingSystem extends System {
 			// load data
 			String name = in.readUTF();
 			if (!name.equals(saveName)) {
-				java.lang.System.out.println("Metafile is corrupted: name");
+				Logger.error("Metafile is corrupted: name");
 				game.createEvent(new MessageEvent(Event.Type.FAILED_LOAD, "Metadata of save is corrupted: name"));
 			}
 			scene.envStates.levelName = name;
 
 			in.close();
 		} catch (IOException e1) {
-			e1.printStackTrace();
+			Logger.warn("Meta could not be loaded!");
 		}
 	}
 
@@ -235,7 +256,7 @@ public class SavingSystem extends System {
 
 			byte version = (byte) in.read();
 			if (version != SAVE_VERSION_PLAYER) {
-				java.lang.System.out.println("Version of player file is not correct!");
+				Logger.error("Version of player file is not correct!");
 				game.createEvent(new MessageEvent(Event.Type.FAILED_LOAD,
 						"Incompatible version '" + version + "'. Can't load file (player)."));
 			}
@@ -243,7 +264,7 @@ public class SavingSystem extends System {
 			// load data
 			String name = in.readUTF();
 			if (!name.equals(playerName)) {
-				java.lang.System.out.println("Playerfile is corrupted: name");
+				Logger.error("Playerfile is corrupted: name");
 				game.createEvent(new MessageEvent(Event.Type.FAILED_LOAD, "Playerdata of save is corrupted: name"));
 			}
 			newPlayer = new Player(name);
@@ -254,7 +275,7 @@ public class SavingSystem extends System {
 
 			in.close();
 		} catch (IOException e1) {
-			e1.printStackTrace();
+			Logger.warn("Player data could not be loaded!");
 		}
 		return newPlayer;
 	}
@@ -268,7 +289,7 @@ public class SavingSystem extends System {
 
 			byte version = (byte) in.read();
 			if (version != SAVE_VERSION) {
-				java.lang.System.out.println("Version of save file is not correct!");
+				Logger.error("Version of save file is not correct!");
 				game.createEvent(new MessageEvent(Event.Type.FAILED_LOAD,
 						"Incompatible version '" + version + "'. Can't load file."));
 			}
@@ -314,7 +335,7 @@ public class SavingSystem extends System {
 
 			in.close();
 		} catch (IOException e1) {
-			e1.printStackTrace();
+			Logger.info("Region could not be loaded (" + regionName + ").");
 		}
 		return chunks;
 	}
@@ -334,7 +355,7 @@ public class SavingSystem extends System {
 
 			out.close();
 		} catch (IOException e1) {
-			e1.printStackTrace();
+			Logger.error("Meta could not be saved!");
 		}
 	}
 
@@ -356,7 +377,7 @@ public class SavingSystem extends System {
 
 			out.close();
 		} catch (IOException e1) {
-			e1.printStackTrace();
+			Logger.error("Player data could not be saved!");
 		}
 	}
 
@@ -411,7 +432,7 @@ public class SavingSystem extends System {
 			}
 			out.close();
 		} catch (IOException e1) {
-			e1.printStackTrace();
+			Logger.error("Region could not be saved (" + regionName + ")!");
 		}
 	}
 }

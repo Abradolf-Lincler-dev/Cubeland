@@ -11,6 +11,7 @@ import events.LoadSceneEvent;
 import game.Config;
 import game.Game;
 import game.GameScene;
+import game.Logger;
 
 public class InputSystem extends System {
 
@@ -62,7 +63,7 @@ public class InputSystem extends System {
 						} else if (command.equals("exit")) {
 							game.createEvent(new Event(Event.Type.EXIT));
 						} else {// unknown command
-							java.lang.System.out.print("Unknown command " + command + "");
+							Logger.warn("Unknown command " + command + "");
 						}
 					}
 				}

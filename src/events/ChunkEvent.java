@@ -3,11 +3,11 @@ package events;
 import game.Chunk;
 
 // The content of a chunk had changed
-public class ChunkChangeEvent extends Event {
+public class ChunkEvent extends Event {
 	public Chunk chunk;
 	
-	public ChunkChangeEvent(Chunk chunk) {
-		super(Event.Type.CHUNK_CHANGED);
+	public ChunkEvent(Type type, Chunk chunk) {
+		super(type);
 	
 		this.chunk = chunk;
 	}
